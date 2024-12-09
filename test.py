@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import requests
+import openpyxl
 
 
 
@@ -32,8 +33,8 @@ def get_data(html):
     soup = BeautifulSoup(html, "html.parser")
     main = soup.find('div', class_="ipc-page-content-container ipc-page-content-container--full sc-253ad8fd-0 iFnBOf")
     title_div = main.find('div', class_="sc-70a366cc-0 bxYZmb")
-    title = title_div.find('span', class_="hero__primary-text")
-    lishki = title.find_all('li', class_="ipc-inline-list__item")
+    title = title_div.find('span', class_="hero__primary-text").text
+    lishki = title_div.find_all('li', class_="ipc-inline-list__item")
     for li in lishki:
         info = li.text
 
@@ -41,19 +42,64 @@ def get_data(html):
     genres = scroll.find_all('a', class_="ipc-chip ipc-chip--on-baseAlt")
     for genre in genres:
         genr = genre.text
-    description = main.find('span', class_="sc-fbb3c9a4-0 liSKpp")
+    description = main.find('span', class_="sc-fbb3c9a4-0 liSKpp").text
     people = main.find_all('ul', class_="ipc-metadata-list ipc-metadata-list--dividers-all title-pc-list ipc-metadata-list--baseAlt")
     for p in people:
-        director = p.find('li', class_="ipc-metadata-list__item") 
+        director = p.find('li', class_="ipc-metadata-list__item").text
     top_cast = main.find_all('div', class_="sc-cd7dc4b7-7 vCane")
     for cast in top_cast:
         nickname = cast.find_all('span', class_="sc-cd7dc4b7-4 zVTic")
-        for nick in nickname:
-            print("--------------------------------------------")
-            print(cast.text)
-            print(nick.text)
+        # for nick in nickname:
+        #     print("--------------------------------------------")
+            # print(cast.text)
+            # print(nick.text)
+    storyline = main.find('div', class_="ipc-html-content-inner-div").text
+    details = main.find('ul', class_="ipc-metadata-list ipc-metadata-list--dividers-all ipc-metadata-list--base")
+    details_section = details.find_all('li', class_="ipc-metadata-list__item")
+    for detail in details_section:
+        print(detail.text)
+    # print('-------------------------------------------') 
+    box_office = main.find('ul', class_="ipc-metadata-list ipc-metadata-list--dividers-none ipc-metadata-list--compact sc-1bec5ca1-0 iiRIlc ipc-metadata-list--base")
+    li = box_office.find_all('li', class_="ipc-inline-list__item")
+    for l in li:
+        j = l.text
+    #     print(l.text)
+    # print('-------------------------------------------')
         
-    
+    data = {
+        "title": title,
+        "info": info,
+        "genro": genr,
+        "description": description,
+        "storyline": storyline,
+        "detail": detail,
+        "budget": j
+    }
+    return data
+
+
+
+def save_to_excel(data):
+    wb = openpyxl.Workbook() 
+    sheet = wb.active
+    sheet["A1"] = "Название фильмов"
+    sheet["B1"] = "Информация"
+    sheet["C1"] = "Жанр"
+    sheet["D1"] = "Описание"
+    sheet["E1"] = "История"
+    sheet["F1"] = "Детали"
+    sheet["G1"] = "Бюджет" 
+
+    for i, item in enumerate(data, start=2):
+        sheet[f"A{i}"] = item["title"]
+        sheet[f"B{i}"] = item["info"]
+        sheet[f"C{i}"] = item["genro"]
+        sheet[f"D{i}"] = item["description"]
+        sheet[f"E{i}"] = item["storyline"]
+        sheet[f"F{i}"] = item["detail"]
+        sheet[f"G{i}"] = item["budget"]
+
+    wb.save("movies.xlsx") 
 
 
 
@@ -64,9 +110,11 @@ def main():
     URL = "https://www.imdb.com/chart/top/?ref_=nv_mv_250"
     html = get_html(URL)
     full_links = get_links(html)
+    data = []
     for link in full_links:
         detail_html = get_html(link)
-        get_data(detail_html)
+        data.append(get_data(detail_html))
+    save_to_excel(data) 
 
 
 if __name__ == "__main__":
